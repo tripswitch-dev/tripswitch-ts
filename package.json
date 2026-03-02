@@ -1,5 +1,5 @@
 {
-  "name": "tripswitch-ts",
+  "name": "@tripswitch-dev/tripswitch-ts",
   "version": "0.1.0",
   "description": "Official TypeScript SDK for TripSwitch circuit breaker service",
   "type": "module",
