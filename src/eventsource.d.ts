@@ -7,6 +7,7 @@ declare module 'eventsource' {
     constructor(url: string, init?: EventSourceInit);
     onmessage: ((event: MessageEvent) => void) | null;
     onerror: (() => void) | null;
+    addEventListener(type: string, listener: (event: MessageEvent) => void): void;
     close(): void;
   }
 

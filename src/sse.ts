@@ -98,7 +98,7 @@ export class BreakerStateManager {
     };
 
     // Listen for named "state" events from the server
-    this.eventSource.addEventListener('state', handleEvent as any);
+    this.eventSource.addEventListener('state', handleEvent);
     // Also handle unnamed/message events for backwards compatibility
     this.eventSource.onmessage = handleEvent;
 
