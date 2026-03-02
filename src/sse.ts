@@ -70,6 +70,8 @@ export class BreakerStateManager {
     this.eventSource.onmessage = (event: MessageEvent) => {
       try {
         const data: SSEBreakerEvent = JSON.parse(event.data);
+        // Default to 0 when null. allowRate is only meaningful for half_open
+        // state; for closed/open breakers, the gating logic ignores it.
         const allowRate = data.allow_rate ?? 0;
 
         if (data.state === 'half_open' && data.allow_rate === null) {

@@ -91,7 +91,7 @@ export interface ClientOptions {
   metadataSyncInterval?: number;
   /**
    * Maximum milliseconds to wait for initial SSE sync.
-   * If not set, the constructor waits indefinitely.
+   * Defaults to 30000 (30s). Set to 0 to wait indefinitely.
    */
   timeout?: number;
 }
@@ -113,7 +113,7 @@ export interface ExecuteOptions<T = unknown> {
   /** Metrics to report. Values can be `Latency`, `() => number`, or `number`. */
   metrics?: Record<string, typeof Latency | (() => number) | number>;
   /** Extract metrics from the task result after execution. */
-  deferredMetrics?: (result: T, error: Error | null) => Record<string, number>;
+  deferredMetrics?: (result: T | undefined, error: Error | null) => Record<string, number>;
   /** Per-call tags (merged with global tags; per-call wins). */
   tags?: Record<string, string>;
   /** Errors that should not count as failures. */

@@ -23,6 +23,7 @@ const BUFFER_CAPACITY = 10_000;
 const BATCH_SIZE = 500;
 const FLUSH_INTERVAL_MS = 15_000;
 const DEFAULT_META_SYNC_INTERVAL_MS = 30_000;
+const DEFAULT_SSE_TIMEOUT_MS = 30_000;
 const HTTP_TIMEOUT_MS = 30_000;
 const BACKOFF_SCHEDULE = [100, 400, 1000];
 
@@ -124,12 +125,13 @@ export class Client {
     if (client.sseManager) {
       client.sseManager.connect();
 
-      // Wait for SSE readiness with optional timeout
-      if (opts.timeout != null && opts.timeout > 0) {
+      // Wait for SSE readiness with timeout (default 30s)
+      const timeoutMs = opts.timeout ?? DEFAULT_SSE_TIMEOUT_MS;
+      if (timeoutMs > 0) {
         const timeout = new Promise<never>((_, reject) =>
           setTimeout(
-            () => reject(new TransportError('initialization timed out')),
-            opts.timeout!,
+            () => reject(new TransportError('SSE initialization timed out')),
+            timeoutMs,
           ),
         );
         await Promise.race([client.sseManager.ready, timeout]);
@@ -217,7 +219,7 @@ export class Client {
 
     // 5. Execute task
     const startTime = Date.now();
-    let result: T;
+    let result: T | undefined;
     let taskError: Error | null = null;
 
     try {
@@ -257,7 +259,7 @@ export class Client {
         // Resolve deferred metrics
         if (opts.deferredMetrics) {
           try {
-            const deferred = opts.deferredMetrics(result!, taskError);
+            const deferred = opts.deferredMetrics(taskError ? undefined : result, taskError);
             if (deferred) {
               for (const [key, value] of Object.entries(deferred)) {
                 if (key) samples.push({ metric: key, value });
@@ -285,7 +287,8 @@ export class Client {
       }
     }
 
-    return result!;
+    // Safe cast: if we reach here, the task did not throw, so result was assigned.
+    return result as T;
   }
 
   /** Send a sample outside of `execute()` for async or fire-and-forget workflows. */
