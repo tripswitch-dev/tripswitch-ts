@@ -35,6 +35,7 @@
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --dir tests/integration",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

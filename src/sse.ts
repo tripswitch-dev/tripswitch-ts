@@ -67,7 +67,7 @@ export class BreakerStateManager {
       },
     });
 
-    this.eventSource.onmessage = (event: MessageEvent) => {
+    const handleEvent = (event: MessageEvent) => {
       try {
         const data: SSEBreakerEvent = JSON.parse(event.data);
         // Default to 0 when null. allowRate is only meaningful for half_open
@@ -96,6 +96,11 @@ export class BreakerStateManager {
         );
       }
     };
+
+    // Listen for named "state" events from the server
+    this.eventSource.addEventListener('state', handleEvent);
+    // Also handle unnamed/message events for backwards compatibility
+    this.eventSource.onmessage = handleEvent;
 
     this.eventSource.onerror = () => {
       if (this.closed) return;
