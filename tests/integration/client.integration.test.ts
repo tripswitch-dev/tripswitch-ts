@@ -158,7 +158,7 @@ describe.skipIf(!cfg)('Client integration', () => {
 
     try {
       // Give metadata sync time to complete initial fetch
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 2_000));
 
       const breakers = client.getBreakersMetadata();
       const routers = client.getRoutersMetadata();
