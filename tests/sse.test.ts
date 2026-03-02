@@ -10,6 +10,7 @@ const { MockES, getMockInstances, resetMockInstances } = vi.hoisted(() => {
     closed = false;
     url: string;
     opts: any;
+    private listeners = new Map<string, Set<(event: any) => void>>();
 
     constructor(url: string, opts: any) {
       this.url = url;
@@ -17,10 +18,21 @@ const { MockES, getMockInstances, resetMockInstances } = vi.hoisted(() => {
       instances.push(this);
     }
 
+    addEventListener(type: string, handler: (event: any) => void) {
+      if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+      this.listeners.get(type)!.add(handler);
+    }
+
     close() { this.closed = true; }
 
     simulateEvent(data: object) {
-      this.onmessage?.({ data: JSON.stringify(data) });
+      const event = { data: JSON.stringify(data) };
+      // Dispatch to named 'state' listeners (matches real server behavior)
+      for (const handler of this.listeners.get('state') ?? []) {
+        handler(event);
+      }
+      // Also dispatch to onmessage
+      this.onmessage?.(event);
     }
 
     simulateError() {

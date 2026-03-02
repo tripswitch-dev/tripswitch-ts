@@ -9,20 +9,34 @@ const { MockES, getMockInstances, resetMockInstances } = vi.hoisted(() => {
     onmessage: ((event: any) => void) | null = null;
     onerror: (() => void) | null = null;
     closed = false;
+    private listeners = new Map<string, Set<(event: any) => void>>();
 
     constructor(_url: string, _opts: any) {
       instances.push(this);
       queueMicrotask(() => {
-        this.onmessage?.({
+        const event = {
           data: JSON.stringify({ breaker: '__init__', state: 'closed', allow_rate: 0 }),
-        });
+        };
+        for (const handler of this.listeners.get('state') ?? []) {
+          handler(event);
+        }
+        this.onmessage?.(event);
       });
+    }
+
+    addEventListener(type: string, handler: (event: any) => void) {
+      if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+      this.listeners.get(type)!.add(handler);
     }
 
     close() { this.closed = true; }
 
     simulateEvent(data: object) {
-      this.onmessage?.({ data: JSON.stringify(data) });
+      const event = { data: JSON.stringify(data) };
+      for (const handler of this.listeners.get('state') ?? []) {
+        handler(event);
+      }
+      this.onmessage?.(event);
     }
   }
 
