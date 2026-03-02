@@ -24,7 +24,6 @@ const BATCH_SIZE = 500;
 const FLUSH_INTERVAL_MS = 15_000;
 const DEFAULT_META_SYNC_INTERVAL_MS = 30_000;
 const DEFAULT_SSE_TIMEOUT_MS = 30_000;
-const HTTP_TIMEOUT_MS = 30_000;
 const BACKOFF_SCHEDULE = [100, 400, 1000];
 
 const defaultLogger: Logger = {
@@ -369,10 +368,7 @@ export class Client {
   // ── Private ─────────────────────────────────────────────────────────
 
   private async doClose(): Promise<void> {
-    // Signal abort
-    this.abortController.abort();
-
-    // Clear timers
+    // Clear timers first to prevent new scheduled flushes
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = null;
@@ -382,13 +378,16 @@ export class Client {
       this.metaSyncTimer = null;
     }
 
-    // Final flush
+    // Final flush (before abort so the request can complete)
     await this.flush();
 
     // Wait for in-flight sends
     while (this.inFlightSends > 0) {
       await new Promise((r) => setTimeout(r, 10));
     }
+
+    // Signal abort for any stragglers
+    this.abortController.abort();
 
     // Close SSE
     this.sseManager?.close();
@@ -554,6 +553,7 @@ export class Client {
             method: 'POST',
             headers,
             body: compressed,
+            signal: this.abortController.signal,
           });
 
           if (response.status >= 200 && response.status < 300) {
