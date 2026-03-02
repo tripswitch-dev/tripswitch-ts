@@ -1,17 +1,17 @@
-# tripswitch-ts
+# @tripswitch-dev/tripswitch-ts
 
 Official TypeScript SDK for [TripSwitch](https://tripswitch.dev) — a circuit breaker service for distributed systems.
 
 ## Install
 
 ```bash
-npm install tripswitch-ts
+npm install @tripswitch-dev/tripswitch-ts
 ```
 
 ## Quick Start
 
 ```ts
-import { Client, Latency } from 'tripswitch-ts';
+import { Client, Latency } from '@tripswitch-dev/tripswitch-ts';
 
 const client = await Client.create({
   projectId: 'proj_abc123',
@@ -110,7 +110,7 @@ SDK health metrics snapshot: buffer size, dropped samples, SSE status, flush fai
 ## Admin Client
 
 ```ts
-import { AdminClient } from 'tripswitch-ts/admin';
+import { AdminClient } from '@tripswitch-dev/tripswitch-ts/admin';
 
 const admin = new AdminClient({ apiKey: 'eb_admin_...' });
 
