@@ -86,6 +86,30 @@ const result = await client.execute(
 );
 ```
 
+#### Fallback when a breaker is open
+
+When a breaker is open (or half-open and rejecting), `execute` throws a `BreakerOpenError` **before** running the task. Catch it to provide a fallback:
+
+```ts
+import { BreakerOpenError } from '@tripswitch-dev/tripswitch-ts';
+
+try {
+  const result = await client.execute(
+    () => fetch('https://api.example.com/data'),
+    { breakers: ['api-latency'] },
+  );
+  return result;
+} catch (err) {
+  if (err instanceof BreakerOpenError) {
+    console.warn(`Breaker tripped: ${err.breaker}`);
+    return cachedData; // serve stale data, default value, etc.
+  }
+  throw err;
+}
+```
+
+The error's `.breaker` property contains the name of the tripped breaker (if a specific one triggered it), so you can tailor fallback logic per breaker.
+
 ### `client.report(input)`
 
 Send a sample outside of `execute()` for async or fire-and-forget workflows.
