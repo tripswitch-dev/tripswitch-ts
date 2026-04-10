@@ -103,7 +103,7 @@ export interface Breaker {
   readonly kind: BreakerKind;
   readonly op: BreakerOp;
   readonly threshold: number;
-  readonly routerId: string;
+  readonly routerIds: string[];
   readonly kindParams: Readonly<Record<string, unknown>>;
   readonly windowMs: number;
   readonly minCount: number;
@@ -279,6 +279,30 @@ export interface CreateProjectKeyResponse {
   readonly key: string;
   readonly keyPrefix: string;
   readonly message: string;
+}
+
+// ── Workspaces ───────────────────────────────────────────────────────────
+
+export interface Workspace {
+  readonly id: string;
+  readonly name: string;
+  readonly slug: string;
+  readonly orgId: string;
+  readonly insertedAt: Date | null;
+}
+
+export interface CreateWorkspaceInput {
+  name: string;
+  slug: string;
+}
+
+export interface UpdateWorkspaceInput {
+  name?: string;
+  slug?: string;
+}
+
+export interface ListWorkspacesResponse {
+  workspaces: Workspace[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
