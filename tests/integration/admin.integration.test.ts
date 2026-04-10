@@ -5,7 +5,7 @@ import {
   BreakerOp,
   RouterMode,
 } from '../../src/admin/index.js';
-import { NotFoundError } from '../../src/errors.js';
+import { NotFoundError, UnauthorizedError, ForbiddenError } from '../../src/errors.js';
 
 /**
  * Integration tests for the AdminClient.
@@ -25,9 +25,10 @@ function loadConfig() {
   const apiKey = process.env.TRIPSWITCH_ADMIN_KEY ?? '';
   const projectId = process.env.TRIPSWITCH_PROJECT_ID ?? '';
   const baseUrl = process.env.TRIPSWITCH_BASE_URL || 'https://api.tripswitch.dev';
+  const workspaceId = process.env.TRIPSWITCH_WORKSPACE_ID;
 
   if (!apiKey || !projectId) return null;
-  return { apiKey, projectId, baseUrl };
+  return { apiKey, projectId, baseUrl, workspaceId };
 }
 
 const cfg = loadConfig();
@@ -58,7 +59,7 @@ describe.skipIf(!cfg)('AdminClient integration', () => {
     let createdId = '';
     try {
       // Create
-      const project = await client.createProject({ name: projectName });
+      const project = await client.createProject({ name: projectName, workspaceId: cfg!.workspaceId });
       createdId = project.id;
       expect(project.name).toBe(projectName);
       expect(project.id).toBeTruthy();
@@ -162,6 +163,64 @@ describe.skipIf(!cfg)('AdminClient integration', () => {
     try {
       const events = await client.listEvents(cfg!.projectId, { limit: 10 });
       expect(Array.isArray(events)).toBe(true);
+    } finally {
+      client.close();
+    }
+  });
+
+  it('listProjects', async () => {
+    const client = makeClient();
+    try {
+      const projects = await client.listProjects();
+      expect(Array.isArray(projects)).toBe(true);
+      const found = projects.some((p) => p.id === cfg!.projectId);
+      expect(found).toBe(true);
+    } finally {
+      client.close();
+    }
+  });
+
+  it('listProjectKeys', async () => {
+    const client = makeClient();
+    try {
+      const keys = await client.listProjectKeys(cfg!.projectId);
+      expect(Array.isArray(keys)).toBe(true);
+    } finally {
+      client.close();
+    }
+  });
+
+  it('getWorkspace', async () => {
+    if (!cfg!.workspaceId) return;
+    const client = makeClient();
+    try {
+      const ws = await client.getWorkspace(cfg!.workspaceId);
+      expect(ws.id).toBe(cfg!.workspaceId);
+    } finally {
+      client.close();
+    }
+  });
+
+  it('notFoundError', async () => {
+    const client = makeClient();
+    try {
+      await expect(
+        client.getProject('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toThrow(NotFoundError);
+    } finally {
+      client.close();
+    }
+  });
+
+  it('unauthorizedError', async () => {
+    const client = new AdminClient({
+      apiKey: 'eb_admin_invalid',
+      baseUrl: cfg!.baseUrl,
+    });
+    try {
+      await expect(client.getProject('any')).rejects.toSatisfy(
+        (e: unknown) => e instanceof UnauthorizedError || e instanceof ForbiddenError,
+      );
     } finally {
       client.close();
     }

@@ -81,6 +81,7 @@ export interface Project {
 
 export interface CreateProjectInput {
   name: string;
+  workspaceId?: string;
 }
 
 export interface UpdateProjectInput {

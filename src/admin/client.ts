@@ -94,7 +94,9 @@ export class AdminClient {
   }
 
   async createProject(input: CreateProjectInput, options?: RequestOptions): Promise<Project> {
-    const data = await this.request('POST', '/v1/projects', { name: input.name }, undefined, options);
+    const body: Record<string, unknown> = { name: input.name };
+    if (input.workspaceId != null) body.workspace_id = input.workspaceId;
+    const data = await this.request('POST', '/v1/projects', body, undefined, options);
     return parseProject(data);
   }
 
