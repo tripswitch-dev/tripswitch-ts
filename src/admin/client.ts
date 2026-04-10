@@ -18,6 +18,7 @@ import type {
   CreateProjectInput,
   CreateProjectKeyInput,
   CreateProjectKeyResponse,
+  CreateWorkspaceInput,
   CreateRouterInput,
   Event,
   IngestSecretRotation,
@@ -34,6 +35,9 @@ import type {
   UpdateNotificationChannelInput,
   UpdateProjectInput,
   UpdateRouterInput,
+  UpdateWorkspaceInput,
+  Workspace,
+  ListWorkspacesResponse,
 } from './types.js';
 import { parseDt } from './types.js';
 import type { BreakerKind, BreakerOp, HalfOpenPolicy, RouterMode, NotificationChannelType, NotificationEventType } from './types.js';
@@ -90,7 +94,9 @@ export class AdminClient {
   }
 
   async createProject(input: CreateProjectInput, options?: RequestOptions): Promise<Project> {
-    const data = await this.request('POST', '/v1/projects', { name: input.name }, undefined, options);
+    const body: Record<string, unknown> = { name: input.name };
+    if (input.workspaceId != null) body.workspace_id = input.workspaceId;
+    const data = await this.request('POST', '/v1/projects', body, undefined, options);
     return parseProject(data);
   }
 
@@ -161,9 +167,9 @@ export class AdminClient {
       undefined,
       options,
     );
-    const routerId = (data as any).router_id ?? '';
+    const routerIds: string[] = (data as any).router_ids ?? [];
     const breakerData = (data as any).breaker ?? data;
-    return parseBreaker(breakerData, routerId);
+    return parseBreaker(breakerData, routerIds);
   }
 
   async createBreaker(
@@ -179,9 +185,9 @@ export class AdminClient {
       undefined,
       options,
     );
-    const routerId = (data as any).router_id ?? '';
+    const routerIds: string[] = (data as any).router_ids ?? [];
     const breakerData = (data as any).breaker ?? data;
-    return parseBreaker(breakerData, routerId);
+    return parseBreaker(breakerData, routerIds);
   }
 
   async updateBreaker(
@@ -198,9 +204,9 @@ export class AdminClient {
       undefined,
       options,
     );
-    const routerId = (data as any).router_id ?? '';
+    const routerIds: string[] = (data as any).router_ids ?? [];
     const breakerData = (data as any).breaker ?? data;
-    return parseBreaker(breakerData, routerId);
+    return parseBreaker(breakerData, routerIds);
   }
 
   async deleteBreaker(
@@ -640,6 +646,35 @@ export class AdminClient {
     );
   }
 
+  // ── Workspaces ───────────────────────────────────────────────────────
+
+  async listWorkspaces(options?: RequestOptions): Promise<ListWorkspacesResponse> {
+    const data = await this.request('GET', '/v1/workspaces', undefined, undefined, options);
+    return { workspaces: ((data as any).workspaces ?? []).map(parseWorkspace) };
+  }
+
+  async createWorkspace(input: CreateWorkspaceInput, options?: RequestOptions): Promise<Workspace> {
+    const data = await this.request('POST', '/v1/workspaces', { name: input.name, slug: input.slug }, undefined, options);
+    return parseWorkspace(data);
+  }
+
+  async getWorkspace(workspaceId: string, options?: RequestOptions): Promise<Workspace> {
+    const data = await this.request('GET', `/v1/workspaces/${workspaceId}`, undefined, undefined, options);
+    return parseWorkspace(data);
+  }
+
+  async updateWorkspace(workspaceId: string, input: UpdateWorkspaceInput, options?: RequestOptions): Promise<Workspace> {
+    const body: Record<string, unknown> = {};
+    if (input.name != null) body.name = input.name;
+    if (input.slug != null) body.slug = input.slug;
+    const data = await this.request('PATCH', `/v1/workspaces/${workspaceId}`, body, undefined, options);
+    return parseWorkspace(data);
+  }
+
+  async deleteWorkspace(workspaceId: string, options?: RequestOptions): Promise<void> {
+    await this.request('DELETE', `/v1/workspaces/${workspaceId}`, undefined, undefined, options);
+  }
+
   // ── Internal: HTTP ───────────────────────────────────────────────────
 
   private async request(
@@ -754,7 +789,17 @@ function parseProject(d: any): Project {
   };
 }
 
-function parseBreaker(d: any, routerId = ''): Breaker {
+function parseWorkspace(d: any): Workspace {
+  return {
+    id: d.id ?? '',
+    name: d.name ?? '',
+    slug: d.slug ?? '',
+    orgId: d.org_id ?? '',
+    insertedAt: parseDt(d.inserted_at),
+  };
+}
+
+function parseBreaker(d: any, routerIds: string[] = []): Breaker {
   return {
     id: d.id ?? '',
     name: d.name ?? '',
@@ -762,7 +807,7 @@ function parseBreaker(d: any, routerId = ''): Breaker {
     kind: (d.kind ?? 'error_rate') as BreakerKind,
     op: (d.op ?? 'gt') as BreakerOp,
     threshold: d.threshold ?? 0,
-    routerId: routerId || d.router_id || '',
+    routerIds: routerIds.length ? routerIds : (d.router_ids ?? []),
     kindParams: Object.freeze(d.kind_params ?? {}),
     windowMs: d.window_ms ?? 0,
     minCount: d.min_count ?? 0,

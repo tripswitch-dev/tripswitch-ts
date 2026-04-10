@@ -34,4 +34,8 @@ export type {
   ProjectKey,
   CreateProjectKeyInput,
   CreateProjectKeyResponse,
+  Workspace,
+  CreateWorkspaceInput,
+  UpdateWorkspaceInput,
+  ListWorkspacesResponse,
 } from './types.js';
