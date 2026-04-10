@@ -37,6 +37,7 @@ import type {
   UpdateRouterInput,
   UpdateWorkspaceInput,
   Workspace,
+  ListWorkspacesResponse,
 } from './types.js';
 import { parseDt } from './types.js';
 import type { BreakerKind, BreakerOp, HalfOpenPolicy, RouterMode, NotificationChannelType, NotificationEventType } from './types.js';
@@ -645,9 +646,9 @@ export class AdminClient {
 
   // ── Workspaces ───────────────────────────────────────────────────────
 
-  async listWorkspaces(options?: RequestOptions): Promise<Workspace[]> {
+  async listWorkspaces(options?: RequestOptions): Promise<ListWorkspacesResponse> {
     const data = await this.request('GET', '/v1/workspaces', undefined, undefined, options);
-    return ((data as any).workspaces ?? []).map(parseWorkspace);
+    return { workspaces: ((data as any).workspaces ?? []).map(parseWorkspace) };
   }
 
   async createWorkspace(input: CreateWorkspaceInput, options?: RequestOptions): Promise<Workspace> {
